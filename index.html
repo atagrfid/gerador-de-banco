@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerador de EPCs | Interface Tech</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Gerador de EPCs</h1>
+        <p class="subtitle">
+          Importe planilhas (.xlsx, .csv) para iniciar ou use os botões [+] para
+          começar do zero.
+        </p>
+      </header>
+
+      <div class="controls-toolbar">
+        <div class="control-group">
+          <button id="undoBtn" title="Desfazer (Ctrl+Z)">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 7v6h-6" />
+              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l-3 2.7" />
+            </svg>
+          </button>
+          <button id="redoBtn" title="Refazer (Ctrl+Y)">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 7v6h6" />
+              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3l3 2.7" />
+            </svg>
+          </button>
+          <span class="separator"></span>
+          <button id="importSheetBtn" title="Importar Planilha (.xlsx, .csv)">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" /></svg
+            >Importar
+          </button>
+          <button
+            id="addAutocompleteCol"
+            class="special-btn"
+            title="Adicionar coluna de preenchimento automático"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 20v-6M6 20v-2M18 20v-4" />
+              <path d="M12 14V4M6 18V4M18 16V4" /></svg
+            >Autocomplete
+          </button>
+          <button id="pasteList" title="Colar lista de dados em uma coluna">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              /></svg
+            >Colar Lista
+          </button>
+          <button
+            id="deleteRowsBtn"
+            class="danger-btn"
+            title="Excluir Linhas Selecionadas"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path
+                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              /></svg
+            >Excluir Linhas
+          </button>
+          <button
+            id="deleteColsBtn"
+            class="danger-btn"
+            title="Excluir Colunas Selecionadas"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path
+                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              /></svg
+            >Excluir Colunas
+          </button>
+          <button
+            id="clearSheetBtn"
+            class="danger-btn"
+            title="Limpar todos os dados da planilha"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="3 6 5 6 21 6" />
+              <path
+                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+              />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" /></svg
+            >Limpar Tudo
+          </button>
+        </div>
+        <div class="control-group generation-group">
+          <button id="generateEPC" title="Gerar EPCs de 24 caracteres">
+            Gerar EPCs
+          </button>
+          <button
+            id="copyEPCsBtn"
+            class="export-btn"
+            title="Copiar EPCs para área de transferência"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              />
+            </svg>
+          </button>
+          <button
+            id="exportTxtBtn"
+            class="export-btn"
+            title="Exportar EPCs como .txt"
+          >
+            .txt
+          </button>
+          <button
+            id="exportCsvBtn"
+            class="export-btn"
+            title="Exportar EPCs como .csv"
+          >
+            .csv
+          </button>
+          <button
+            id="exportXlsxBtn"
+            class="export-btn"
+            title="Exportar EPCs como .xlsx"
+          >
+            .xlsx
+          </button>
+        </div>
+      </div>
+
+      <div class="spreadsheet-container" id="spreadsheet-container">
+        <div id="fill-handle" class="fill-handle"></div>
+        <div id="empty-state" class="empty-state">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 3v18h18" />
+            <path d="M7 12v2h2v-2z" />
+            <path d="M12 7v2h2V7z" />
+            <path d="M12 12v2h2v-2z" />
+            <path d="M12 17v2h2v-2z" />
+            <path d="M17 7v2h2V7z" />
+            <path d="M17 12v2h2v-2z" />
+          </svg>
+          <h2>Planilha Inativa</h2>
+          <p>
+            Use o botão [+] à direita para iniciar sua primeira coluna ou
+            importe um arquivo.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modais e Scripts -->
+    <div id="paste-modal-overlay" class="modal-overlay hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Colar Lista de Dados</h2>
+        <div class="form-group">
+          <label for="modal-column-select"
+            >Selecione a coluna de destino:</label
+          >
+          <select id="modal-column-select"></select>
+        </div>
+        <div class="form-group">
+          <label for="modal-list-input"
+            >Cole sua lista (um item por linha):</label
+          >
+          <textarea id="modal-list-input" rows="10"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-cancel-btn" class="cancel-btn">Cancelar</button>
+          <button id="modal-confirm-btn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+    <div id="import-modal-overlay" class="modal-overlay hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Importar Planilha</h2>
+        <div class="form-group">
+          <label for="file-input" class="file-input-label"
+            >Selecionar Arquivo (.xlsx ou .csv)</label
+          >
+          <input
+            type="file"
+            id="file-input"
+            accept=".xlsx, .csv"
+            style="display: none"
+          />
+          <p id="file-name-display">Nenhum arquivo selecionado.</p>
+        </div>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="header-checkbox" checked />
+          <label for="header-checkbox">O primeiro registro é o cabeçalho</label>
+        </div>
+        <div class="modal-actions">
+          <button id="modal-import-cancel-btn" class="cancel-btn">
+            Cancelar
+          </button>
+          <button id="modal-import-confirm-btn">Confirmar Importação</button>
+        </div>
+      </div>
+    </div>
+    <div id="toast-notification" class="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
