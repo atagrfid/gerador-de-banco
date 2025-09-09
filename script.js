@@ -53,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let history = [];
   let historyIndex = -1;
 
+  // --- FUNÇÕES DE DESFAZER/REFAZER E TECLADO (COM CORREÇÃO) ---
   const updateUndoRedoButtons = () => {
     undoBtn.disabled = historyIndex <= 0;
     redoBtn.disabled = historyIndex >= history.length - 1;
@@ -60,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveState = () => {
     history = history.slice(0, historyIndex + 1);
     const currentState = {
-      headers: [...headers],
+      headers: JSON.parse(JSON.stringify(headers)),
       data: JSON.parse(JSON.stringify(data)),
     };
     history.push(currentState);
@@ -68,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateUndoRedoButtons();
   };
   const loadState = (state) => {
-    headers = [...state.headers];
+    headers = JSON.parse(JSON.stringify(state.headers));
     data = JSON.parse(JSON.stringify(state.data));
     renderSheet();
   };
@@ -90,6 +91,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const handleKeyDown = (e) => {
+    const activeElement = document.activeElement;
+    const isEditingCell = activeElement && activeElement.isContentEditable;
+    const isEditingInput =
+      activeElement &&
+      (activeElement.tagName === "INPUT" ||
+        activeElement.tagName === "TEXTAREA");
+
     if (e.ctrlKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       undo();
@@ -97,11 +105,10 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       redo();
     } else if (e.key === "Delete" || e.key === "Backspace") {
-      if (
-        document.activeElement.isContentEditable &&
-        window.getSelection().toString() !== ""
-      )
+      // CORREÇÃO: Deixa a tecla funcionar normalmente se estivermos editando qualquer tipo de input
+      if (isEditingCell || isEditingInput) {
         return;
+      }
       e.preventDefault();
       clearSelectedCellsContent();
     } else if (e.key === "Control") {
@@ -116,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  // (O resto do código permanece o mesmo)
   let toastTimeout;
   const showToast = (message, type = "success") => {
     clearTimeout(toastTimeout);
@@ -136,7 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
       emptyState.style.display = "none";
     }
   };
-
   const addColumns = () => {
     const quantity = parseInt(prompt("Quantas colunas adicionar?", "1"));
     if (isNaN(quantity) || quantity <= 0) return;
@@ -160,7 +167,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSheet();
     saveState();
   };
-
   const renderSheet = () => {
     const table = document.createElement("table");
     const thead = document.createElement("thead");
@@ -254,10 +260,10 @@ document.addEventListener("DOMContentLoaded", () => {
     spreadsheetContainer
       .querySelectorAll("th:not(.control-column):not(.add-btn-cell)")
       .forEach((th) => {
-        const headerName = th.querySelector(".header-name")?.textContent;
-        if (headerName?.toLowerCase() === "epc") return;
-        if (headerName !== AUTOCOMPLETE_COL_NAME) {
-          th.querySelector(".header-name")?.addEventListener("dblclick", () =>
+        const headerName = th.querySelector(".header-name");
+        if (headerName?.textContent.toLowerCase() === "epc") return;
+        if (headerName?.textContent !== AUTOCOMPLETE_COL_NAME) {
+          headerName?.addEventListener("dblclick", () =>
             handleHeaderRename(th)
           );
         }
@@ -689,12 +695,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "EPCs");
     XLSX.writeFile(workbook, "epcs.xlsx");
-    showToast("Arquivo .xlsx exportado!");
   };
   copyEPCsBtn.addEventListener("click", handleCopyEPCs);
   exportTxtBtn.addEventListener("click", handleExportTXT);
   exportCsvBtn.addEventListener("click", handleExportCSV);
-  exportXlsxBtn.addEventListener("click", handleExportXLSX);
   addAutocompleteColBtn.addEventListener("click", () => {
     if (headers.includes(AUTOCOMPLETE_COL_NAME)) {
       showToast("A coluna Autocomplete já existe.", "info");
@@ -790,6 +794,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
   const handleHeaderRename = (th) => {
+    clearSelectionVisuals();
     const headerSpan = th.querySelector(".header-name");
     const originalName = headerSpan.textContent;
     const colIndex = th.dataset.colIndex;
@@ -949,11 +954,15 @@ document.addEventListener("DOMContentLoaded", () => {
     showToast("Planilha importada com sucesso!");
   };
   importSheetBtn.addEventListener("click", openImportModal);
+  document
+    .querySelector(".file-input-label")
+    .addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", handleFileSelected);
   modalImportConfirmBtn.addEventListener("click", confirmImport);
   modalImportCancelBtn.addEventListener("click", closeImportModal);
   closeImportModalBtn.addEventListener("click", closeImportModal);
 
+  // Inicialização
   saveState();
   renderSheet();
 });

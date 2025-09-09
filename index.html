@@ -221,13 +221,18 @@
           >
             .csv
           </button>
-          <button
-            id="exportXlsxBtn"
-            class="export-btn"
-            title="Exportar EPCs como .xlsx"
-          >
-            .xlsx
-          </button>
+          <!-- Novo Dropdown para XLSX -->
+          <div class="dropdown">
+            <button id="exportXlsxBtn" class="export-btn">.xlsx</button>
+            <div id="xlsx-dropdown-menu" class="dropdown-menu">
+              <button id="exportEPCsOnlyBtn" class="dropdown-item">
+                Somente EPCs
+              </button>
+              <button id="exportFullSheetBtn" class="dropdown-item">
+                Planilha Completa
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
