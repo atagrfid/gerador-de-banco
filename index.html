@@ -181,58 +181,10 @@
             >Limpar Tudo
           </button>
         </div>
-        <div class="control-group generation-group">
+        <div class="control-group main-action-group">
           <button id="generateEPC" title="Gerar EPCs de 24 caracteres">
             Gerar EPCs
           </button>
-          <button
-            id="copyEPCsBtn"
-            class="export-btn"
-            title="Copiar EPCs para área de transferência"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path
-                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-              />
-            </svg>
-          </button>
-          <button
-            id="exportTxtBtn"
-            class="export-btn"
-            title="Exportar EPCs como .txt"
-          >
-            .txt
-          </button>
-          <button
-            id="exportCsvBtn"
-            class="export-btn"
-            title="Exportar EPCs como .csv"
-          >
-            .csv
-          </button>
-          <!-- Novo Dropdown para XLSX -->
-          <div class="dropdown">
-            <button id="exportXlsxBtn" class="export-btn">.xlsx</button>
-            <div id="xlsx-dropdown-menu" class="dropdown-menu">
-              <button id="exportEPCsOnlyBtn" class="dropdown-item">
-                Somente EPCs
-              </button>
-              <button id="exportFullSheetBtn" class="dropdown-item">
-                Planilha Completa
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -263,6 +215,74 @@
             Use o botão [+] à direita para iniciar sua primeira coluna ou
             importe um arquivo.
           </p>
+        </div>
+      </div>
+
+      <div class="controls-toolbar bottom-toolbar">
+        <div class="control-group">
+          <span>Exportar EPCs:</span>
+          <button
+            id="copyEPCsBtn"
+            class="export-btn"
+            title="Copiar EPCs para área de transferência"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path
+                d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+              /></svg
+            >Copiar
+          </button>
+          <button
+            id="exportTxtBtn"
+            class="export-btn"
+            title="Exportar EPCs como .txt"
+          >
+            .txt
+          </button>
+          <button
+            id="exportCsvBtn"
+            class="export-btn"
+            title="Exportar EPCs como .csv"
+          >
+            .csv
+          </button>
+          <div class="dropdown">
+            <button id="exportXlsxBtn" class="export-btn">
+              .xlsx
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div id="xlsx-dropdown-menu" class="dropdown-menu">
+              <button id="exportEPCsOnlyBtn" class="dropdown-item">
+                Somente EPCs
+              </button>
+              <button id="exportFullSheetBtn" class="dropdown-item">
+                Planilha Completa
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -317,6 +337,36 @@
           <button id="modal-import-confirm-btn">Confirmar Importação</button>
         </div>
       </div>
+    </div>
+    <div id="export-modal-overlay" class="modal-overlay hidden">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2 id="export-modal-title">Exportar Arquivo</h2>
+        <div class="form-group">
+          <label for="modal-filename-input"
+            >Nome do Arquivo (sem extensão):</label
+          >
+          <input type="text" id="modal-filename-input" />
+        </div>
+        <div class="modal-actions">
+          <button id="modal-export-cancel-btn" class="cancel-btn">
+            Cancelar
+          </button>
+          <button id="modal-export-confirm-btn">Confirmar Exportação</button>
+        </div>
+      </div>
+    </div>
+    <div id="context-menu" class="context-menu">
+      <button class="context-menu-item" id="ctx-clear-content">
+        Limpar Conteúdo
+      </button>
+      <div class="context-menu-separator"></div>
+      <button class="context-menu-item danger" id="ctx-delete-rows">
+        Excluir Linha(s)
+      </button>
+      <button class="context-menu-item danger" id="ctx-delete-cols">
+        Excluir Coluna(s)
+      </button>
     </div>
     <div id="toast-notification" class="toast"></div>
 

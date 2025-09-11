@@ -16,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportTxtBtn = document.getElementById("exportTxtBtn");
   const exportCsvBtn = document.getElementById("exportCsvBtn");
   const exportXlsxBtn = document.getElementById("exportXlsxBtn");
+  const xlsxDropdownMenu = document.getElementById("xlsx-dropdown-menu");
+  const exportEPCsOnlyBtn = document.getElementById("exportEPCsOnlyBtn");
+  const exportFullSheetBtn = document.getElementById("exportFullSheetBtn");
   const pasteModalOverlay = document.getElementById("paste-modal-overlay");
   const modalColumnSelect = document.getElementById("modal-column-select");
   const modalListInput = document.getElementById("modal-list-input");
@@ -33,8 +36,23 @@ document.addEventListener("DOMContentLoaded", () => {
     "modal-import-cancel-btn"
   );
   const closeImportModalBtn = importModalOverlay.querySelector(".close-btn");
+  const exportModalOverlay = document.getElementById("export-modal-overlay");
+  const exportModalTitle = document.getElementById("export-modal-title");
+  const modalFilenameInput = document.getElementById("modal-filename-input");
+  const modalExportConfirmBtn = document.getElementById(
+    "modal-export-confirm-btn"
+  );
+  const modalExportCancelBtn = document.getElementById(
+    "modal-export-cancel-btn"
+  );
+  const closeExportModalBtn = exportModalOverlay.querySelector(".close-btn");
   const emptyState = document.getElementById("empty-state");
   const toast = document.getElementById("toast-notification");
+  const bottomToolbar = document.querySelector(".bottom-toolbar");
+  const contextMenu = document.getElementById("context-menu");
+  const ctxClearContent = document.getElementById("ctx-clear-content");
+  const ctxDeleteRows = document.getElementById("ctx-delete-rows");
+  const ctxDeleteCols = document.getElementById("ctx-delete-cols");
 
   // Variáveis de estado
   const AUTOCOMPLETE_COL_NAME = "[AUTOCOMPLETE]";
@@ -48,12 +66,12 @@ document.addEventListener("DOMContentLoaded", () => {
   let fillStartRange = null;
   let isCopyMode = false;
   let selectedFile = null;
+  let exportCallback = null;
 
-  // Lógica de Histórico
+  // Lógica de Histórico e Persistência
   let history = [];
   let historyIndex = -1;
 
-  // --- FUNÇÕES DE DESFAZER/REFAZER E TECLADO (COM CORREÇÃO) ---
   const updateUndoRedoButtons = () => {
     undoBtn.disabled = historyIndex <= 0;
     redoBtn.disabled = historyIndex >= history.length - 1;
@@ -66,6 +84,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     history.push(currentState);
     historyIndex++;
+    localStorage.setItem(
+      "epcGeneratorState",
+      JSON.stringify({ history, historyIndex })
+    );
     updateUndoRedoButtons();
   };
   const loadState = (state) => {
@@ -79,6 +101,10 @@ document.addEventListener("DOMContentLoaded", () => {
       loadState(history[historyIndex]);
       updateUndoRedoButtons();
       showToast("Ação desfeita", "info");
+      localStorage.setItem(
+        "epcGeneratorState",
+        JSON.stringify({ history, historyIndex })
+      );
     }
   };
   const redo = () => {
@@ -87,6 +113,10 @@ document.addEventListener("DOMContentLoaded", () => {
       loadState(history[historyIndex]);
       updateUndoRedoButtons();
       showToast("Ação refeita", "info");
+      localStorage.setItem(
+        "epcGeneratorState",
+        JSON.stringify({ history, historyIndex })
+      );
     }
   };
 
@@ -97,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
       activeElement &&
       (activeElement.tagName === "INPUT" ||
         activeElement.tagName === "TEXTAREA");
-
     if (e.ctrlKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       undo();
@@ -105,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       redo();
     } else if (e.key === "Delete" || e.key === "Backspace") {
-      // CORREÇÃO: Deixa a tecla funcionar normalmente se estivermos editando qualquer tipo de input
       if (isEditingCell || isEditingInput) {
         return;
       }
@@ -123,7 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // (O resto do código permanece o mesmo)
   let toastTimeout;
   const showToast = (message, type = "success") => {
     clearTimeout(toastTimeout);
@@ -144,6 +171,18 @@ document.addEventListener("DOMContentLoaded", () => {
       emptyState.style.display = "none";
     }
   };
+
+  const updateExportButtonsState = (enabled) => {
+    const buttons = [copyEPCsBtn, exportTxtBtn, exportCsvBtn, exportXlsxBtn];
+    buttons.forEach((btn) => (btn.disabled = !enabled));
+    bottomToolbar.style.opacity = enabled ? "1" : "0.4";
+    bottomToolbar.style.pointerEvents = enabled ? "auto" : "none";
+  };
+  const dataChanged = () => {
+    updateExportButtonsState(false);
+    saveState();
+  };
+
   const addColumns = () => {
     const quantity = parseInt(prompt("Quantas colunas adicionar?", "1"));
     if (isNaN(quantity) || quantity <= 0) return;
@@ -152,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data.forEach((row) => row.push(""));
     }
     renderSheet();
-    saveState();
+    dataChanged();
   };
   const addRows = () => {
     if (headers.length === 0) {
@@ -165,8 +204,9 @@ document.addEventListener("DOMContentLoaded", () => {
       data.push(Array(headers.length).fill(""));
     }
     renderSheet();
-    saveState();
+    dataChanged();
   };
+
   const renderSheet = () => {
     const table = document.createElement("table");
     const thead = document.createElement("thead");
@@ -382,7 +422,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     renderSheet();
     showToast("Preenchimento automático aplicado!");
-    saveState();
+    dataChanged();
   };
   const getFillValue = (baseValue, increment, mode) => {
     if (mode === "copy") {
@@ -449,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data[r][c] = newValue;
     });
     renderSheet();
-    saveState();
+    dataChanged();
   };
   const handleSelectionStart = (e) => {
     if (e.target.closest(".control-column")) return;
@@ -581,6 +621,7 @@ document.addEventListener("DOMContentLoaded", () => {
       row[epcColumnIndex] = finalEPC;
     });
     showToast("EPCs gerados com sucesso!");
+    updateExportButtonsState(true);
     renderSheet();
   });
   const openPasteModal = () => {
@@ -628,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSheet();
     closePasteModal();
     showToast("Lista colada com sucesso!");
-    saveState();
+    dataChanged();
   };
   pasteListBtn.addEventListener("click", openPasteModal);
   modalConfirmBtn.addEventListener("click", confirmPaste);
@@ -675,30 +716,108 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("Erro ao copiar.", "error");
       });
   };
+  const openExportModal = (title, defaultFilename, callback) => {
+    exportModalTitle.textContent = title;
+    modalFilenameInput.value = defaultFilename;
+    exportCallback = callback;
+    exportModalOverlay.classList.remove("hidden");
+    modalFilenameInput.focus();
+    modalFilenameInput.select();
+  };
+  const closeExportModal = () => {
+    exportModalOverlay.classList.add("hidden");
+    exportCallback = null;
+  };
+  const confirmExport = () => {
+    const filename = modalFilenameInput.value.trim();
+    if (!filename) {
+      showToast("O nome do arquivo não pode estar vazio.", "error");
+      return;
+    }
+    if (exportCallback) {
+      exportCallback(filename);
+    }
+    closeExportModal();
+  };
   const handleExportTXT = () => {
-    const epcs = getEpcData();
-    if (!epcs) return;
-    downloadFile("epcs.txt", epcs.join("\n"), "text/plain;charset=utf-8;");
-    showToast("Arquivo .txt exportado!");
+    openExportModal("Exportar para .txt", "epcs", (filename) => {
+      const epcs = getEpcData();
+      if (!epcs) return;
+      downloadFile(
+        `${filename}.txt`,
+        epcs.join("\n"),
+        "text/plain;charset=utf-8;"
+      );
+      showToast("Arquivo .txt exportado!");
+    });
   };
   const handleExportCSV = () => {
-    const epcs = getEpcData();
-    if (!epcs) return;
-    downloadFile("epcs.csv", epcs.join("\n"), "text/csv;charset=utf-8;");
-    showToast("Arquivo .csv exportado!");
+    openExportModal("Exportar para .csv", "epcs", (filename) => {
+      const epcs = getEpcData();
+      if (!epcs) return;
+      downloadFile(
+        `${filename}.csv`,
+        epcs.join("\n"),
+        "text/csv;charset=utf-8;"
+      );
+      showToast("Arquivo .csv exportado!");
+    });
   };
-  const handleExportXLSX = () => {
-    const epcs = getEpcData();
-    if (!epcs) return;
-    const dataToExport = epcs.map((epc) => [epc]);
-    const worksheet = XLSX.utils.aoa_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "EPCs");
-    XLSX.writeFile(workbook, "epcs.xlsx");
+  const exportEPCsOnlyToXLSX = () => {
+    openExportModal("Exportar EPCs para .xlsx", "epcs_lista", (filename) => {
+      const epcs = getEpcData();
+      if (!epcs) return;
+      const dataToExport = epcs.map((epc) => [epc]);
+      const worksheet = XLSX.utils.aoa_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "EPCs");
+      XLSX.writeFile(workbook, `${filename}.xlsx`);
+      showToast("Arquivo .xlsx (somente EPCs) exportado!");
+    });
+  };
+  const exportFullSheetToXLSX = () => {
+    openExportModal(
+      "Exportar Planilha Completa para .xlsx",
+      "planilha_completa",
+      (filename) => {
+        if (headers.length === 0) {
+          showToast("Não há dados para exportar.", "info");
+          return;
+        }
+        const dataToExport = [headers, ...data];
+        const worksheet = XLSX.utils.aoa_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Planilha EPCs");
+        XLSX.writeFile(workbook, `${filename}.xlsx`);
+        showToast("Planilha completa exportada para .xlsx!");
+      }
+    );
+  };
+  const toggleXlsxDropdown = (event) => {
+    event.stopPropagation();
+    xlsxDropdownMenu.classList.toggle("show");
+  };
+  const closeAllDropdowns = () => {
+    xlsxDropdownMenu.classList.remove("show");
   };
   copyEPCsBtn.addEventListener("click", handleCopyEPCs);
   exportTxtBtn.addEventListener("click", handleExportTXT);
   exportCsvBtn.addEventListener("click", handleExportCSV);
+  exportXlsxBtn.addEventListener("click", toggleXlsxDropdown);
+  exportEPCsOnlyBtn.addEventListener("click", () => {
+    exportEPCsOnlyToXLSX();
+    closeAllDropdowns();
+  });
+  exportFullSheetBtn.addEventListener("click", () => {
+    exportFullSheetToXLSX();
+    closeAllDropdowns();
+  });
+  window.addEventListener("click", (event) => {
+    if (!event.target.closest(".dropdown")) {
+      closeAllDropdowns();
+    }
+    hideContextMenu();
+  });
   addAutocompleteColBtn.addEventListener("click", () => {
     if (headers.includes(AUTOCOMPLETE_COL_NAME)) {
       showToast("A coluna Autocomplete já existe.", "info");
@@ -707,7 +826,7 @@ document.addEventListener("DOMContentLoaded", () => {
     headers.push(AUTOCOMPLETE_COL_NAME);
     data.forEach((r) => r.push(""));
     renderSheet();
-    saveState();
+    dataChanged();
   });
   const handleDeleteColumn = (e) => {
     const colIndex = parseInt(e.target.dataset.colIndex);
@@ -715,7 +834,7 @@ document.addEventListener("DOMContentLoaded", () => {
       headers.splice(colIndex, 1);
       data.forEach((row) => row.splice(colIndex, 1));
       renderSheet();
-      saveState();
+      dataChanged();
     }
   };
   const handleDeleteSelectedCols = () => {
@@ -741,7 +860,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       selectedCells.clear();
       renderSheet();
-      saveState();
+      dataChanged();
     }
   };
   deleteColsBtn.addEventListener("click", handleDeleteSelectedCols);
@@ -759,7 +878,7 @@ document.addEventListener("DOMContentLoaded", () => {
       sortedRows.forEach((rowIndex) => data.splice(rowIndex, 1));
       selectedCells.clear();
       renderSheet();
-      saveState();
+      dataChanged();
     }
   };
   deleteRowsBtn.addEventListener("click", handleDeleteSelectedRows);
@@ -776,6 +895,7 @@ document.addEventListener("DOMContentLoaded", () => {
       headers = [];
       data = [];
       selectedCells.clear();
+      localStorage.removeItem("epcGeneratorState");
       renderSheet();
       showToast("Planilha limpa com sucesso!");
       saveState();
@@ -790,7 +910,7 @@ document.addEventListener("DOMContentLoaded", () => {
       data[row][col] !== e.target.textContent
     ) {
       data[row][col] = e.target.textContent;
-      saveState();
+      dataChanged();
     }
   };
   const handleHeaderRename = (th) => {
@@ -807,7 +927,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const newName = input.value.trim();
       if (newName && newName !== originalName && !headers.includes(newName)) {
         headers[colIndex] = newName;
-        saveState();
+        dataChanged();
       } else if (headers.includes(newName) && newName !== originalName) {
         showToast("Este nome de coluna já existe.", "error");
       }
@@ -852,7 +972,7 @@ document.addEventListener("DOMContentLoaded", () => {
       row.splice(targetIndex, 0, movedCell);
     });
     renderSheet();
-    saveState();
+    dataChanged();
   }
   document.addEventListener("keydown", handleKeyDown);
   document.addEventListener("keyup", handleKeyUp);
@@ -871,7 +991,7 @@ document.addEventListener("DOMContentLoaded", () => {
         changed = true;
       }
     });
-    if (changed) saveState();
+    if (changed) dataChanged();
   };
   const openImportModal = () => {
     if (
@@ -950,7 +1070,7 @@ document.addEventListener("DOMContentLoaded", () => {
     headers = newHeaders;
     data = newData;
     renderSheet();
-    saveState();
+    dataChanged();
     showToast("Planilha importada com sucesso!");
   };
   importSheetBtn.addEventListener("click", openImportModal);
@@ -961,8 +1081,60 @@ document.addEventListener("DOMContentLoaded", () => {
   modalImportConfirmBtn.addEventListener("click", confirmImport);
   modalImportCancelBtn.addEventListener("click", closeImportModal);
   closeImportModalBtn.addEventListener("click", closeImportModal);
+  modalExportConfirmBtn.addEventListener("click", confirmExport);
+  modalExportCancelBtn.addEventListener("click", closeExportModal);
+  closeExportModalBtn.addEventListener("click", closeExportModal);
+  const showContextMenu = (event) => {
+    event.preventDefault();
+    const target = event.target.closest("td, th");
+    if (!target) return;
+    const isSelected = target.classList.contains("selected");
+    if (!isSelected && target.tagName === "TD") {
+      clearSelectionVisuals();
+      selectedCells.clear();
+      target.classList.add("selected");
+      selectedCells.add(target);
+      updateFillHandlePosition();
+    }
+    contextMenu.style.left = `${event.clientX}px`;
+    contextMenu.style.top = `${event.clientY}px`;
+    contextMenu.classList.add("show");
+  };
+  const hideContextMenu = () => {
+    contextMenu.classList.remove("show");
+  };
+  spreadsheetContainer.addEventListener("contextmenu", showContextMenu);
+  window.addEventListener("click", (event) => {
+    hideContextMenu();
+    if (!event.target.closest(".dropdown")) {
+      closeAllDropdowns();
+    }
+  });
+  ctxClearContent.addEventListener("click", clearSelectedCellsContent);
+  ctxDeleteRows.addEventListener("click", handleDeleteSelectedRows);
+  ctxDeleteCols.addEventListener("click", handleDeleteSelectedCols);
 
   // Inicialização
-  saveState();
+  const savedStateJSON = localStorage.getItem("epcGeneratorState");
+  if (savedStateJSON) {
+    try {
+      const savedState = JSON.parse(savedStateJSON);
+      history = savedState.history || [];
+      historyIndex = savedState.historyIndex;
+      if (history[historyIndex]) {
+        loadState(history[historyIndex]);
+      } else {
+        saveState();
+      }
+      showToast("Sessão anterior carregada!", "info");
+    } catch (e) {
+      console.error("Erro ao carregar estado salvo:", e);
+      saveState();
+    }
+  } else {
+    saveState();
+  }
+
+  updateExportButtonsState(false);
   renderSheet();
 });
